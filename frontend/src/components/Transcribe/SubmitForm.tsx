@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { submitYoutubeUrl, submitLocalFile } from '../../api/transcribe'
+import { listJobs, submitYoutubeUrl, submitLocalFile } from '../../api/transcribe'
 import { useTranscribeStore } from '../../state/transcribeStore'
 import { Icon } from '../Icons'
 export function SubmitForm() {
@@ -10,7 +10,7 @@ export function SubmitForm() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
-  const requestRef = useRef({ fingerprint: '', id: '' })
+  const requestRef = useRef(loadPendingSubmission())
   const capabilities = useTranscribeStore(s => s.capabilities)
   const error = useTranscribeStore(s => s.error)
   const canSummarize = capabilities?.summary.available ?? false
@@ -34,11 +34,26 @@ export function SubmitForm() {
         requestRef.current = { fingerprint, id: crypto.randomUUID() }
       }
       const requestId = requestRef.current.id
+      savePendingSubmission(requestRef.current)
+      const existing = (await listJobs().catch(() => [])).find(job =>
+        !['done', 'error', 'cancelled'].includes(job.status) &&
+        (job.client_request_id === requestId || (type === 'url' && job.source === url.trim()))
+      )
+      if (existing) {
+        store.select(existing.id)
+        requestRef.current = { fingerprint: '', id: '' }
+        clearPendingSubmission()
+        setUrl(''); setFile(null)
+        if (inputRef.current) inputRef.current.value = ''
+        setSuccess('已有相同任务在队列中，已继续跟踪原任务。')
+        return
+      }
       const job = type === 'url'
         ? await submitYoutubeUrl(url.trim(), summarize && canSummarize, requestId)
         : await submitLocalFile(file!, summarize && canSummarize, requestId)
       store.select(job.id)
       requestRef.current = { fingerprint: '', id: '' }
+      clearPendingSubmission()
       setUrl(''); setFile(null)
       if (inputRef.current) inputRef.current.value = ''
       setSuccess('已加入队列，可以继续添加下一个任务。')
@@ -59,4 +74,19 @@ export function SubmitForm() {
       <p className="submit-note"><Icon name="check" size={13} />一次处理一个任务，完成后自动继续</p>
     </form>
   </section>
+}
+
+const PENDING_SUBMISSION_KEY = 'doubao-voice-studio:pending-submission'
+function loadPendingSubmission() {
+  try {
+    const value = sessionStorage.getItem(PENDING_SUBMISSION_KEY)
+    if (value) return JSON.parse(value) as { fingerprint: string; id: string }
+  } catch { /* private browsing or stale JSON */ }
+  return { fingerprint: '', id: '' }
+}
+function savePendingSubmission(value: { fingerprint: string; id: string }) {
+  try { sessionStorage.setItem(PENDING_SUBMISSION_KEY, JSON.stringify(value)) } catch { /* private browsing */ }
+}
+function clearPendingSubmission() {
+  try { sessionStorage.removeItem(PENDING_SUBMISSION_KEY) } catch { /* private browsing */ }
 }
