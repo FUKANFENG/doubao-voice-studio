@@ -1,0 +1,67 @@
+.developer-panel { min-width:0 }
+.dev-intro { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,.9fr); align-items:center; gap:32px; padding:32px; background:#fdfdf9 }
+.dev-kicker { display:flex; align-items:center; gap:8px; color:var(--teal); font-size:11px; font-weight:600; letter-spacing:.6px }
+.dev-intro h2 { font-size:27px; font-weight:650; line-height:1.5; margin:16px 0 12px; letter-spacing:-.5px }
+.dev-intro p { font-size:13px; color:var(--muted); line-height:1.8; max-width:440px }
+.dev-actions { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin-top:24px }
+.dev-actions .btn-primary { font-size:12px; gap:8px; padding:12px 16px }
+.dev-inline-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:12px; text-decoration:none }
+.dev-inline-link:hover { color:var(--orange-dark) }
+.dev-copy-control { display:inline-flex; align-items:center; flex-wrap:wrap; gap:6px; position:relative }
+.dev-copy-button { display:inline-flex; align-items:center; gap:6px; color:inherit; background:transparent; border:1px solid currentColor; border-radius:8px; padding:6px 10px; font-size:11px; min-height:32px }
+.dev-copy-button:hover { background:#ffffff18 }
+.dev-copy-status { font-size:11px; line-height:1.6 }
+.dev-connection { background:#263d36; color:#f1f5e9; padding:24px; border-radius:12px; min-width:0 }
+.dev-connection-heading { display:flex; gap:8px; align-items:center; color:#c1d7c7; font-size:12px; margin-bottom:24px }
+.dev-api-label { margin-left:auto; font-size:9px; letter-spacing:1px; color:#c0d3c6 }
+.dev-connection > code { display:block; font:14px/1.8 Consolas,monospace; overflow-wrap:anywhere; margin-bottom:16px; color:#fff }
+.dev-connection-footer { margin-top:24px; border-top:1px solid #516257; padding-top:16px; font-size:10px; color:#b9cdbd }
+.dev-resources { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:20px 0 32px; gap:12px }
+.dev-resources > a { display:flex; align-items:center; gap:10px; padding:16px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); text-decoration:none; min-width:0 }
+.dev-resources > a:hover { border-color:#c4cebc; background:#fcfdf9 }
+.dev-resources > a > svg { color:var(--teal) }
+.dev-resources span { font-size:12px; font-weight:600; flex:1 }
+.dev-resources small { display:block; color:var(--muted); font-size:10px; font-weight:400; margin-top:4px }
+.dev-docs-layout { display:grid; grid-template-columns:188px minmax(0,1fr); gap:24px; align-items:start }
+.dev-toc { position:sticky; top:24px; min-width:0 }
+.dev-toc .label { font-size:12px }
+.dev-toc input { background:var(--surface); font-size:12px; padding:10px 12px }
+.dev-toc nav { display:grid; gap:4px; margin-top:16px }
+.dev-toc nav button { display:flex; align-items:center; gap:8px; border:0; border-radius:8px; padding:12px 8px; background:transparent; font-size:12px; line-height:1.5; text-align:left; color:var(--muted) }
+.dev-toc nav button > span { color:#7c897c; font:10px Consolas,monospace }
+.dev-toc nav button.selected { background:var(--orange-soft); color:var(--orange-dark); font-weight:600 }
+.dev-toc nav button:hover { background:#edf0e7 }
+.dev-agent-index { display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--teal); font-size:11px; border-top:1px solid var(--line); margin-top:20px; padding-top:20px }
+.dev-article { padding:28px; min-width:0 }
+.dev-article-heading { padding-bottom:24px; margin-bottom:24px; border-bottom:1px solid var(--line) }
+.dev-article h2 { font-size:23px; line-height:1.5; margin-top:10px; font-weight:650 }
+.dev-prose { font-size:13px; line-height:1.95; overflow-wrap:anywhere }
+.dev-prose p { margin:16px 0 }
+.dev-prose h3 { font-size:15px; font-weight:650; margin:28px 0 12px; color:var(--ink) }
+.dev-prose ul { padding-left:20px; list-style:disc; margin:16px 0 }
+.dev-prose li { padding-left:4px; margin:8px 0 }
+.dev-prose a { color:var(--teal); text-decoration:underline; text-underline-offset:3px }
+.dev-prose code { font:12px/1.8 Consolas,"SFMono-Regular",monospace; background:#f0f3ec; color:#3e6557; padding:2px 5px; border-radius:4px }
+.dev-table-scroll { max-width:100%; overflow-x:auto; border:1px solid var(--line); border-radius:8px; margin:20px 0 }
+.dev-prose table { border-collapse:collapse; width:100%; font-size:12px; text-align:left }
+.dev-prose th { background:#f5f7f1; color:#586952; font-weight:600 }
+.dev-prose td,.dev-prose th { padding:12px; vertical-align:top; border-bottom:1px solid var(--line); min-width:88px }
+.dev-prose tr:last-child td { border-bottom:0 }
+.dev-code { border:1px solid #344d42; border-radius:10px; overflow:hidden; margin:20px 0; background:#20382f; color:#e3efd9 }
+.dev-code-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; background:#294337; padding:8px 12px; font-size:10px; color:#d1dfc9 }
+.dev-code-heading > span { font-family:Consolas,monospace }
+.dev-code .dev-copy-button { border-color:#627d64 }
+.dev-code pre { margin:0; padding:20px; overflow-x:auto; font-size:12px; line-height:1.9; tab-size:2 }
+.dev-code code { font-size:12px; color:inherit; padding:0; border-radius:0; background:transparent; white-space:pre; overflow-wrap:normal }
+.dev-pagination { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:32px; padding-top:24px; border-top:1px solid var(--line) }
+.dev-pagination .btn-ghost { gap:8px; font-size:12px; padding:8px 12px }
+.dev-pagination > span { font-size:11px; color:var(--muted) }
+.dev-no-results { font-size:12px; line-height:1.8; padding:12px 0; color:var(--muted) }
+.dev-load-error { display:flex; gap:16px; align-items:center; color:var(--danger) }
+.dev-loading { display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px; min-height:160px }
+.dev-loading > span { width:32px; height:32px; background:var(--teal-soft); border-radius:8px }
+@media(max-width:1200px) { .dev-intro { gap:24px; padding:24px }.dev-intro h2 { font-size:24px }.dev-docs-layout { grid-template-columns:164px minmax(0,1fr); gap:16px }.dev-resources > a { padding:12px; gap:8px }.dev-resources > a > svg:last-child:not(:first-child) { display:none }.dev-article { padding:24px } }
+@media(max-width:1000px) { .dev-intro { grid-template-columns:1fr }.dev-title-break { display:none }.dev-connection { padding:20px }.dev-connection-heading { margin-bottom:16px }.dev-connection-footer { margin-top:16px }.dev-docs-layout { grid-template-columns:minmax(0,1fr) }.dev-toc { position:static }.dev-toc nav { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px }.dev-toc nav button { flex-shrink:0; border:1px solid var(--line); padding:10px 12px }.dev-agent-index { margin-top:8px; padding-top:12px }.dev-resources { margin-bottom:24px } }
+@media(max-width:600px) { .dev-intro { padding:20px; gap:24px }.dev-intro h2 { font-size:23px }.dev-intro p { font-size:12px }.dev-actions { gap:12px }.dev-resources { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px }.dev-resources > a { padding:12px }.dev-article { padding:20px }.dev-prose { font-size:12px }.dev-prose h3 { font-size:14px }.dev-article h2 { font-size:21px }.dev-code pre { padding:12px }.dev-api-label { display:none }.dev-prose td,.dev-prose th { padding:8px; min-width:80px }.dev-prose td:first-child { min-width:110px }.dev-load-error { flex-wrap:wrap } }
+@media(max-width:600px) { .dev-connection > code { font-size:12px } }
+@media(max-width:400px) { .studio-shell .sidebar nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)) }.sidebar .nav-item { border-radius:8px }.studio-shell .sidebar { padding-bottom:8px } }

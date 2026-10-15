@@ -1,0 +1,25 @@
+# 豆包语音工作室 API
+
+> 自建 HTTP / WebSocket 服务。复用服务器上的豆包登录态，封装语音合成、实时识别、课程转录和可选 AI 学习笔记。
+> 公网 Base URL：使用当前文档所在服务的域名；your-domain.example 是占位示例
+> 同机 Base URL：http://127.0.0.1:8000
+
+## 接入资料
+- [完整 Markdown 文档](/api/docs/markdown)：参数、响应、状态机、错误、并发及 WebSocket 帧协议。
+- [OpenAPI 3.1](/openapi.json)：HTTP API 的机器可读契约；WebSocket 不在 OpenAPI 中。
+- [Python 示例](/api/docs/examples/python)：可下载并导入的客户端，依赖 requests。
+- [Node.js 示例](/api/docs/examples/node)：可下载并导入的客户端，Node.js 18+，无额外依赖。
+- [交互式 HTTP 文档](/docs)
+- [开发文档页面](/#developer)
+
+## 接入约定
+- 从业务后端调用；无需读取、复制或向前端传递服务器的 auth.json / 豆包 Cookie。
+- 当前服务没有应用级 API Key。部署层如有 Cloudflare Access 等访问控制，请沿用其现有授权流程。
+- POST /api/transcribe/url 或 /api/transcribe/file 返回 HTTP 200 的任务对象，保存 id，每 2 秒 GET /api/transcribe/jobs/{id}。
+- done / error / cancelled 是终态；AI 整理另看 summary_status，done 不保证 AI 成功。
+- summarize 默认 false，显式传 true 才整理。AI 是课程任务的一部分，没有通用聊天或独立摘要端点。
+- 一个服务进程串行处理课程任务，任务间隔 2 秒；TTS 不在此队列。不要自动提高并发或开启多 worker。
+- POST 没有幂等键。网络超时后先查询任务列表，避免盲目重发。
+- GET /api/health 的 ok 是登录态启动自检状态，不是上游服务每次的实时可用保证。
+- WS /ws/asr：16kHz、单声道、16-bit little-endian 原始 PCM；partial 替换当前文本，final 无文本；发送 finish 后等 final，不要立即关闭。
+- 仅通过公开 API 操作；文档页面只读，示例默认只请求 health。
