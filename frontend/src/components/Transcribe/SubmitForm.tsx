@@ -10,6 +10,7 @@ export function SubmitForm() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const requestRef = useRef({ fingerprint: '', id: '' })
   const capabilities = useTranscribeStore(s => s.capabilities)
   const error = useTranscribeStore(s => s.error)
   const canSummarize = capabilities?.summary.available ?? false
@@ -26,8 +27,18 @@ export function SubmitForm() {
     } else if (!file) { store.setError('请先选择音频或视频文件'); return }
     setSubmitting(true)
     try {
-      const job = type === 'url' ? await submitYoutubeUrl(url.trim(), summarize && canSummarize) : await submitLocalFile(file!, summarize && canSummarize)
+      const fingerprint = type === 'url'
+        ? 'url:' + url.trim()
+        : 'file:' + file!.name + ':' + file!.size + ':' + file!.lastModified
+      if (requestRef.current.fingerprint !== fingerprint || !requestRef.current.id) {
+        requestRef.current = { fingerprint, id: crypto.randomUUID() }
+      }
+      const requestId = requestRef.current.id
+      const job = type === 'url'
+        ? await submitYoutubeUrl(url.trim(), summarize && canSummarize, requestId)
+        : await submitLocalFile(file!, summarize && canSummarize, requestId)
       store.select(job.id)
+      requestRef.current = { fingerprint: '', id: '' }
       setUrl(''); setFile(null)
       if (inputRef.current) inputRef.current.value = ''
       setSuccess('已加入队列，可以继续添加下一个任务。')

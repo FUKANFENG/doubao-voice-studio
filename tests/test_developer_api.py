@@ -61,6 +61,11 @@ class DeveloperContractTests(unittest.TestCase):
                 detail = submitted.json()
                 self.assertEqual(detail["summary_status"], "not_requested")
                 self.assertEqual(detail["queue_position"], 1)
+                retried = self.client.post("/api/transcribe/url", json={"url": "https://youtu.be/jNQXAC9IVRw", "request_id": "retry-lesson-1"})
+                repeated = self.client.post("/api/transcribe/url", json={"url": "https://youtu.be/jNQXAC9IVRw", "request_id": "retry-lesson-1"})
+                self.assertEqual(retried.status_code, 200)
+                self.assertEqual(repeated.status_code, 200)
+                self.assertEqual(retried.json()["id"], repeated.json()["id"])
                 job_id = detail["id"]
                 history = self.client.get("/api/transcribe/jobs").json()
                 self.assertNotIn("result_text", history[0])

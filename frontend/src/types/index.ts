@@ -23,13 +23,14 @@ export interface TtsSpeakersResponse {
 }
 
 // ====== ASR ======
-export type AsrEventType = 'partial' | 'final' | 'error'
+export type AsrEventType = 'queued' | 'ready' | 'partial' | 'final' | 'error'
 
 export interface AsrEvent {
   type: AsrEventType
   text?: string
   code?: string
   message?: string
+  position?: number
 }
 
 // ====== Health ======

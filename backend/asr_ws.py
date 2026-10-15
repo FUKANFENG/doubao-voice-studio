@@ -123,11 +123,17 @@ async def asr_endpoint(client_ws: WebSocket) -> None:
     """WS /ws/asr 入口。"""
     await client_ws.accept()
     from .asr_gate import asr_slot
-    if asr_slot.locked():
-        await client_ws.send_json({"type": "error", "code": "asr_busy",
-                                   "message": "语音识别正在使用中，请等待当前转录或录音结束。"})
-        await client_ws.close(code=1013)
-        return
+    position = asr_slot.position()
+    if position:
+        try:
+            await client_ws.send_json({
+                "type": "queued",
+                "position": position,
+                "message": f"当前有任务正在使用 ASR，已进入第 {position} 位等待队列。",
+            })
+        except Exception:
+            await client_ws.close(code=1000)
+            return
     async with asr_slot:
         await _relay_asr(client_ws)
 
@@ -168,6 +174,15 @@ async def _relay_asr(client_ws: WebSocket) -> None:
         return
 
     log.info("asr: upstream connected, both sides relaying")
+    try:
+        # The browser waits for this handshake before opening its microphone.
+        await client_ws.send_json({"type": "ready"})
+    except Exception:
+        try:
+            await doubao_ws.close()
+        except Exception:
+            pass
+        return
 
     # 两个方向各起一个 task
     uplink = asyncio.create_task(_browser_to_doubao(client_ws, doubao_ws))

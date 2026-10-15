@@ -19,7 +19,7 @@
 - done / error / cancelled 是终态；AI 整理另看 summary_status，done 不保证 AI 成功。
 - summarize 默认 false，显式传 true 才整理。AI 是课程任务的一部分，没有通用聊天或独立摘要端点。
 - 一个服务进程串行处理课程任务，任务间隔 2 秒；TTS 不在此队列。不要自动提高并发或开启多 worker。
-- POST 没有幂等键。网络超时后先查询任务列表，避免盲目重发。
+- POST 支持可选 `request_id` 幂等键；网络超时后用同一标识重试，或先查询任务列表，避免重复任务。
 - GET /api/health 的 ok 是登录态启动自检状态，不是上游服务每次的实时可用保证。
-- WS /ws/asr：16kHz、单声道、16-bit little-endian 原始 PCM；partial 替换当前文本，final 无文本；发送 finish 后等 final，不要立即关闭。
+- WS /ws/asr：16kHz、单声道、16-bit little-endian 原始 PCM；通道忙时先收到 queued，按 FIFO 等待 ready 后再发送 PCM；partial 替换当前文本，final 无文本；发送 finish 后等 final，不要立即关闭。
 - 仅通过公开 API 操作；文档页面只读，示例默认只请求 health。

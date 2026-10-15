@@ -121,7 +121,7 @@ Vite 默认使用 5173 端口，并将 API、WebSocket 和开发文档请求代�
 | GET | /api/transcribe/jobs/{id} | 任务详情与结果 |
 | POST | /api/transcribe/jobs/{id}/cancel | 取消尚未开始的任务 |
 
-提交任务返回 HTTP 200 和任务对象，保存 `id` 后每 2 秒查询。终态为 `done / error / cancelled`；AI 是否成功还要查看 `summary_status`。创建任务的 POST 没有幂等键，不应在响应超时后盲目重试。
+提交任务返回 HTTP 200 和任务对象，保存 `id` 后每 2 秒查询。终态为 `done / error / cancelled`；AI 是否成功还要查看 `summary_status`。客户端应为一次提交生成并复用 `request_id`；响应超时后用同一个标识重试，服务端会返回原任务，不会重复上传或创建任务。
 
 示例客户端在 [examples/](examples/)；Python 需要 requests，Node.js 示例使用内置 fetch。示例默认只检查健康状态，不创建模型任务。
 

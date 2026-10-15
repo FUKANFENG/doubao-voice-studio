@@ -2,6 +2,13 @@ import { create } from 'zustand'
 import { getJob, listJobs, getCapabilities, type TranscribeJob, type JobSummary, type Capabilities, type TranscribeStatus } from '../api/transcribe'
 
 let refreshVersion = 0
+const SELECTED_JOB_KEY = 'doubao-voice-studio:selected-job'
+function readSelectedId(): string | null {
+  try { return sessionStorage.getItem(SELECTED_JOB_KEY) } catch { return null }
+}
+function writeSelectedId(id: string | null) {
+  try { if (id) sessionStorage.setItem(SELECTED_JOB_KEY, id); else sessionStorage.removeItem(SELECTED_JOB_KEY) } catch { /* private browsing */ }
+}
 interface State {
   jobs: JobSummary[]; job: TranscribeJob | null; selectedId: string | null
   capabilities: Capabilities | null; loading: boolean; error: string; connectionError: string
@@ -10,8 +17,8 @@ interface State {
   refresh: () => Promise<void>
 }
 export const useTranscribeStore = create<State>((set, get) => ({
-  jobs: [], job: null, selectedId: null, capabilities: null, loading: true, error: '', connectionError: '',
-  select: (id) => { refreshVersion++; set({ selectedId: id, job: null }) },
+  jobs: [], job: null, selectedId: readSelectedId(), capabilities: null, loading: true, error: '', connectionError: '',
+  select: (id) => { refreshVersion++; writeSelectedId(id); set({ selectedId: id, job: null }) },
   setError: (error) => set({ error }),
   refresh: async () => {
     const version = ++refreshVersion
@@ -21,6 +28,7 @@ export const useTranscribeStore = create<State>((set, get) => ({
       let id = get().selectedId
       if (!id || !jobs.some(job => job.id === id)) {
         id = jobs.find(job => !['done', 'error', 'cancelled'].includes(job.status))?.id || jobs[0]?.id || null
+        writeSelectedId(id)
         set({ selectedId: id, job: null })
       }
       set({ jobs, capabilities, loading: false, connectionError: '' })

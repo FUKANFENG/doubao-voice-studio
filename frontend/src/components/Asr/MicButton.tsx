@@ -41,6 +41,7 @@ export function MicButton() {
       cleanup()
     }
     asr.onPartial(event => { if (version === session.current && !ended) store.setPartial(event.text || '') })
+    asr.onQueued(position => { if (version === session.current && !ended) store.setQueued(position) })
     asr.onFinal(() => {
       if (version !== session.current || ended) return
       ended = true
@@ -56,6 +57,7 @@ export function MicButton() {
     try {
       await asr.connect()
       if (version !== session.current || ended) { asr.close(); return }
+      store.setConnState('connected')
       const recorder = new PcmRecorder()
       recorderRef.current = recorder
       await recorder.start(frame => { if (version === session.current && !ended) { asr.sendPcmFrame(frame); store.incFrame() } })
@@ -77,10 +79,10 @@ export function MicButton() {
     asrRef.current?.finish()
   }
   const recording = store.connState === 'recording'
-  const busy = ['connecting', 'finishing'].includes(store.connState)
+  const busy = ['connecting', 'queued', 'finishing'].includes(store.connState)
   return <div className="microphone-control">
     <button className={'mic-button ' + (recording ? 'recording' : '')} onClick={() => void (recording ? stop() : start())} disabled={busy || !supported} aria-label={recording ? '停止录音' : '开始录音'}>{recording ? <span className="stop-square" /> : <Icon name="mic" size={36} />}</button>
-    <p className="mic-label">{!supported ? '请使用支持麦克风的浏览器，并通过 HTTPS 访问' : store.connState === 'connecting' ? '正在连接麦克风…' : store.connState === 'finishing' ? '正在接收最终结果…' : recording ? '正在倾听，点击结束' : store.connState === 'closed' ? '已记录，点击开始新的一段' : '点击麦克风，开始说话'}</p>
+    <p className="mic-label">{!supported ? '请使用支持麦克风的浏览器，并通过 HTTPS 访问' : store.connState === 'connecting' ? '正在连接麦克风…' : store.connState === 'queued' ? 'ASR 忙，已进入等待队列…' : store.connState === 'finishing' ? '正在接收最终结果…' : recording ? '正在倾听，点击结束' : store.connState === 'closed' ? '已记录，点击开始新的一段' : '点击麦克风，开始说话'}</p>
     {store.errorMsg && <p className="notice error" role="alert">{store.errorMsg}</p>}
   </div>
 }

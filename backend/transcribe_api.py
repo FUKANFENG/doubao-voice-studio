@@ -28,6 +28,7 @@ DOWNLOAD_ERRORS = {
 class UrlSubmission(BaseModel):
     url: str = Field(min_length=1, max_length=2048, description="单个 YouTube 视频或 Shorts 链接，不展开播放列表")
     summarize: bool = Field(default=False, description="转录后使用现有豆包登录态生成 Markdown 学习笔记")
+    request_id: str = Field(default="", max_length=128, description="客户端幂等标识；重试同一提交时保持不变")
 
 
 def _validate_summary(requested: bool) -> None:
@@ -43,7 +44,7 @@ async def capabilities():
 
 @router.post("/url", response_model=JobDetail, summary="提交 YouTube 转录任务",
              operation_id="submitYouTubeTranscription",
-             description="HTTP 200 表示已创建任务，任务尚未完成。保存 id 后轮询详情。重复提交会创建新任务。",
+             description="HTTP 200 表示已创建任务，任务尚未完成。保存 id 后轮询详情。重试同一 request_id 会返回原任务。",
              responses={400: {"model": TextError, "description": "链接不合法或 AI 暂不可用"}})
 async def submit_url(payload: UrlSubmission):
     url = payload.url.strip()
@@ -58,7 +59,10 @@ async def submit_url(payload: UrlSubmission):
     } or parsed.username or parsed.password or port not in {None, 80, 443}:
         raise HTTPException(400, "请输入有效的 YouTube 视频链接")
     _validate_summary(payload.summarize)
-    job = manager.create(source=url, summarize=payload.summarize)
+    existing = manager.find_by_request_id(payload.request_id)
+    if existing:
+        return manager.to_dict(existing)
+    job = manager.create(source=url, summarize=payload.summarize, request_id=payload.request_id)
     manager.enqueue(job)
     return manager.to_dict(job)
 
@@ -68,7 +72,8 @@ async def submit_url(payload: UrlSubmission):
              description="multipart/form-data；应用上限 1 GiB，公网代理可能限制更小。HTTP 200 返回任务。",
              responses={400: {"model": TextError, "description": "空文件、不支持的格式或 AI 不可用"},
                         413: {"model": TextError, "description": "超出应用上传上限"}})
-async def submit_file(file: UploadFile = File(...), summarize: bool = Form(default=False)):
+async def submit_file(file: UploadFile = File(...), summarize: bool = Form(default=False),
+                      request_id: str = Form(default="")):
     if not file.filename:
         raise HTTPException(400, "请选择音频或视频文件")
     _validate_summary(summarize)
@@ -88,8 +93,13 @@ async def submit_file(file: UploadFile = File(...), summarize: bool = Form(defau
                 await asyncio.to_thread(output.write, chunk)
         if not size:
             raise HTTPException(400, "文件为空")
+        existing = manager.find_by_request_id(request_id)
+        if existing:
+            save_path.unlink(missing_ok=True)
+            return manager.to_dict(existing)
         job = manager.create(source=str(save_path), source_type="file",
-                             title=Path(filename).stem, summarize=summarize)
+                             title=Path(filename).stem, summarize=summarize,
+                             request_id=request_id)
         manager.enqueue(job)
         return manager.to_dict(job)
     except BaseException:

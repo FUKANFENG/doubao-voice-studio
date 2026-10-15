@@ -1,6 +1,6 @@
 export type TranscribeStatus = 'pending' | 'downloading' | 'extracting' | 'chunking' | 'waiting_asr' | 'recognizing' | 'merging' | 'summarizing' | 'done' | 'error' | 'cancelled'
 export interface JobSummary {
-  id: string; status: TranscribeStatus; source: string; source_type: 'url' | 'file'; title: string
+  id: string; client_request_id: string; status: TranscribeStatus; source: string; source_type: 'url' | 'file'; title: string
   duration_sec: number; progress_pct: number; current_step: string; total_chunks: number; done_chunks: number
   summary_requested: boolean; summary_status: string; summary_error: string; error: string
   created_at: number; started_at: number; finished_at: number; server_time: number
@@ -34,12 +34,13 @@ export async function getJob(id: string): Promise<TranscribeJob> {
   return { ...job, received_at: performance.now() }
 }
 export const cancelJob = (id: string) => request<JobSummary>('/api/transcribe/jobs/' + id + '/cancel', { method: 'POST' })
-export const submitYoutubeUrl = (url: string, summarize: boolean) =>
-  request<JobSummary>('/api/transcribe/url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, summarize }) })
-export async function submitLocalFile(file: File, summarize: boolean): Promise<JobSummary> {
+export const submitYoutubeUrl = (url: string, summarize: boolean, request_id: string) =>
+  request<JobSummary>('/api/transcribe/url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, summarize, request_id }) })
+export async function submitLocalFile(file: File, summarize: boolean, request_id: string): Promise<JobSummary> {
   const body = new FormData()
   body.append('file', file)
   body.append('summarize', String(summarize))
+  body.append('request_id', request_id)
   // Uploads can take longer than polling requests.
   const response = await fetch('/api/transcribe/file', { method: 'POST', body })
   if (!response.ok) {

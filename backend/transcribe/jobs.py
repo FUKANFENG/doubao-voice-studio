@@ -54,6 +54,7 @@ class Job:
     created_at: float = 0.0
     started_at: float = 0.0
     finished_at: float = 0.0
+    client_request_id: str = ""
 
 
 class JobManager:
@@ -62,6 +63,7 @@ class JobManager:
         self.storage_dir = storage_dir or PROJECT_ROOT / "transcribe_out" / "jobs"
         self.cooldown_sec = cooldown_sec
         self._queue: asyncio.Queue[str] = asyncio.Queue()
+        self._queued_ids: set[str] = set()
         self._worker: asyncio.Task | None = None
 
     def _save(self, job: Job) -> None:
@@ -71,15 +73,25 @@ class JobManager:
         temporary.write_text(json.dumps(asdict(job), ensure_ascii=False), encoding="utf-8")
         temporary.replace(target)
 
-    def create(self, source: str, source_type: str = "url", title: str = "", summarize: bool = False) -> Job:
+    def find_by_request_id(self, request_id: str) -> Job | None:
+        if not request_id:
+            return None
+        return next((job for job in self._jobs.values() if job.client_request_id == request_id), None)
+
+    def create(self, source: str, source_type: str = "url", title: str = "", summarize: bool = False,
+               request_id: str = "") -> Job:
         job = Job(id=uuid.uuid4().hex[:12], status=JobStatus.PENDING, source=source,
                   source_type=source_type, title=title, created_at=time.time(),
-                  summary_requested=summarize, summary_status="pending" if summarize else "not_requested")
+                  summary_requested=summarize, summary_status="pending" if summarize else "not_requested",
+                  client_request_id=request_id)
         self._save(job)
         self._jobs[job.id] = job
         return job
 
     def enqueue(self, job: Job) -> None:
+        if job.status != JobStatus.PENDING or job.id in self._queued_ids:
+            return
+        self._queued_ids.add(job.id)
         self._queue.put_nowait(job.id)
 
     def start(self, runner: Callable[..., Awaitable[None]]) -> None:
@@ -128,6 +140,7 @@ class JobManager:
                 self.update(job_id, status=JobStatus.ERROR, error="任务处理异常，请重新提交。",
                             finished_at=time.time())
             finally:
+                self._queued_ids.discard(job_id)
                 self._queue.task_done()
             await asyncio.sleep(self.cooldown_sec)
 

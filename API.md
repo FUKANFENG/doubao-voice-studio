@@ -106,13 +106,15 @@ ffmpeg -i input.wav -ar 16000 -ac 1 -f s16le output.pcm
 ```json
 {"type":"partial","text":"当前完整识别文本"}
 {"type":"final"}
-{"type":"error","code":"asr_busy","message":"语音识别正在使用中，请等待当前转录或录音结束。"}
+{"type":"queued","position":1,"message":"当前有任务正在使用 ASR，已进入第 1 位等待队列。"}
+{"type":"ready"}
+{"type":"error","code":"auth_expired","message":"登录态失效"}
 ```
 
 - `partial.text` 是当前文本快照，每次替换；不要逐条追加，否则会重复。
 - `final` 不携带文本；最终文字使用最后一次 partial.text。
 - `error` 后结束会话；连接关闭但没收到 final 时，保留部分文字并标记未完整完成。
-- 实时听写与课程识别共用一个 ASR 通道。忙时返回 `asr_busy` 并以 1013 关闭；无效登录态用 `auth_expired` / 1008；上游连接失败可能以 1011 关闭。
+- 实时听写与课程识别共用一个 ASR 通道。通道忙时 WebSocket 保持连接并先返回 `queued`，服务端按 FIFO 顺序等待；拿到通道并连上豆包后返回 `ready`，客户端收到 `ready` 再开始发送音频。无效登录态用 `auth_expired` / 1008；上游连接失败可能以 1011 关闭。
 - 这份 WebSocket 帧协议不包含在 HTTP OpenAPI 中。
 
 ```javascript
@@ -131,7 +133,7 @@ ws.onmessage = event => {
     ws.close();
   }
 };
-// ws.onopen 后，由你的录音器按音频节奏调用 ws.send(pcmFrame)。
+// 收到 ready 后，由你的录音器按音频节奏调用 ws.send(pcmFrame)；收到 queued 时先等待。
 // 采集结束：ws.send(JSON.stringify({ type: 'finish' }));
 // 录音器须将麦克风音频重采样为 16kHz mono PCM16，不可直接发送 MediaRecorder 的 WebM。
 ```
@@ -146,6 +148,7 @@ ws.onmessage = event => {
 | --- | --- | --- |
 | url | string，必填 | 1–2048 字符；YouTube 普通视频或 Shorts 链接 |
 | summarize | boolean | false；true 表示识别完成后继续 AI 整理 |
+| request_id | string | 可选，客户端为一次提交生成的幂等标识（最多 128 字符）；超时重试必须复用 |
 
 支持 `youtube.com`、`www.youtube.com`、`m.youtube.com`、`music.youtube.com`、`youtu.be`。播放列表不会展开为多个任务。
 
@@ -168,6 +171,7 @@ Invoke-RestMethod "$base/api/transcribe/jobs/$($job.id)"
 | --- | --- | --- |
 | file | file，必填 | 非空音频 / 视频文件 |
 | summarize | boolean | false；表单中传字符串 true / false |
+| request_id | string | 可选，和 URL 提交相同；同一标识会返回原任务 |
 
 支持扩展名：`.mp4 .mkv .mov .avi .webm .mp3 .wav .m4a .aac .flac .ogg .opus`。服务端应用上限为 1 GiB；公网代理可能有更低的限制。大文件可以在服务所在电脑上使用本机地址上传。
 
@@ -200,7 +204,7 @@ curl.exe --fail-with-body "$base/api/transcribe/file" -F "file=@C:/media/lesson.
 
 | 字段 | 说明 |
 | --- | --- |
-| id / title / source / source_type | 任务 ID、标题、来源、url 或 file；文件来源只返回标题 |
+| id / client_request_id / title / source / source_type | 任务 ID、客户端幂等标识、标题、来源、url 或 file；文件来源只返回标题 |
 | status / progress_pct / current_step | 状态、0–100 阶段进度、可展示的当前步骤 |
 | total_chunks / done_chunks | 识别片段总数 / 已完成数量 |
 | duration_sec | 音视频时长（秒），音频提取前为 0 |

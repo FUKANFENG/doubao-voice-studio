@@ -10,10 +10,28 @@ from backend.transcribe.downloader import extract_pcm
 from backend.transcribe.chunker import split_pcm
 from backend.transcribe.summarizer import decode_event
 from backend.transcribe_api import UrlSubmission, submit_url, _download
+from backend.asr_gate import AsrSlot
 from fastapi import HTTPException
 
 
 class QueueTests(unittest.IsolatedAsyncioTestCase):
+    async def test_asr_slot_waits_in_fifo_order(self):
+        slot = AsrSlot()
+        events = []
+
+        async def work(name, pause=0):
+            async with slot:
+                events.append(f"{name}:start")
+                await asyncio.sleep(pause)
+                events.append(f"{name}:end")
+
+        first = asyncio.create_task(work("first", 0.02))
+        await asyncio.sleep(0)
+        second = asyncio.create_task(work("second"))
+        third = asyncio.create_task(work("third"))
+        await asyncio.gather(first, second, third)
+        self.assertEqual(events, ["first:start", "first:end", "second:start", "second:end", "third:start", "third:end"])
+
     async def test_fifo_one_worker_failure_does_not_block_and_cancel_skips(self):
         with tempfile.TemporaryDirectory() as folder:
             manager = JobManager(Path(folder), cooldown_sec=0)

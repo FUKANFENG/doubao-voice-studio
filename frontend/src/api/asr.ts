@@ -13,6 +13,7 @@ export class AsrClient {
   private errorHandler: ((e: Error) => void) | null = null
   private closeHandler: ((code: number) => void) | null = null
   private openedHandler: (() => void) | null = null
+  private queuedHandler: ((position: number) => void) | null = null
 
   /** 打开 WebSocket */
   connect(): Promise<void> {
@@ -23,25 +24,43 @@ export class AsrClient {
       ws.binaryType = 'arraybuffer'
       this.ws = ws
 
+      let settled = false
+      const resolveReady = () => {
+        if (!settled) {
+          settled = true
+          resolve()
+        }
+      }
+      const rejectBeforeReady = (error: Error) => {
+        if (!settled) {
+          settled = true
+          reject(error)
+        }
+      }
       ws.onopen = () => {
         this.openedHandler?.()
-        resolve()
       }
       ws.onerror = (ev) => {
-        this.errorHandler?.(new Error('WebSocket error'))
-        reject(new Error('WebSocket error'))
+        const error = new Error('WebSocket error')
+        this.errorHandler?.(error)
+        rejectBeforeReady(error)
       }
       ws.onclose = (ev) => {
         this.closeHandler?.(ev.code)
+        rejectBeforeReady(new Error('ASR 连接已关闭'))
       }
       ws.onmessage = (ev) => {
         if (ev.data instanceof ArrayBuffer) return
         try {
           const data = JSON.parse(ev.data) as AsrEvent
-          if (data.type === 'partial') this.partialHandler?.(data)
+          if (data.type === 'queued') this.queuedHandler?.(Number(data.position) || 1)
+          else if (data.type === 'ready') resolveReady()
+          else if (data.type === 'partial') this.partialHandler?.(data)
           else if (data.type === 'final') this.finalHandler?.(data)
           else if (data.type === 'error') {
-            this.errorHandler?.(new Error(`[${data.code}] ${data.message}`))
+            const error = new Error(`[${data.code}] ${data.message}`)
+            this.errorHandler?.(error)
+            rejectBeforeReady(error)
           }
         } catch (e) {
           // ignore non-JSON
@@ -54,6 +73,7 @@ export class AsrClient {
   onFinal(h: Handler) { this.finalHandler = h }
   onError(h: (e: Error) => void) { this.errorHandler = h }
   onClose(h: (code: number) => void) { this.closeHandler = h }
+  onQueued(h: (position: number) => void) { this.queuedHandler = h }
 
   /** 发送一帧 PCM（4096 字节 Int16-LE） */
   sendPcmFrame(buf: ArrayBuffer): void {

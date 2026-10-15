@@ -38,6 +38,7 @@ class CapabilitiesResponse(BaseModel):
 
 class JobInfo(BaseModel):
     id: str
+    client_request_id: str = Field(default="", description="客户端幂等请求标识；用于提交超时后的原任务恢复。")
     status: JobStatus
     source: str = Field(description="YouTube 链接或上传文件标题；不公开本机临时路径。")
     source_type: Literal["url", "file"]
