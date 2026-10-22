@@ -47,6 +47,7 @@
 /frontend/dist/
 /logs/
 /transcribe_out/
+/chat_out/
 /verification/
 /backups/
 /doubao_voice_asr_tts/

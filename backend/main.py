@@ -21,6 +21,7 @@ from .tts_route import router as tts_router
 from .asr_ws import asr_endpoint
 from .transcribe_api import router as transcribe_router
 from .developer_docs import router as developer_router
+from .chat_api import router as chat_router
 from .api_models import HealthResponse
 from fastapi import WebSocket
 
@@ -45,8 +46,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="豆包语音工作室 API", version="1.3.0", lifespan=lifespan,
-    description="语音合成、实时听写、课程转录与豆包 AI 整理。完整文档见 /api/docs/markdown，"
+    title="豆包语音工作室 API", version="1.4.0", lifespan=lifespan,
+    description="语音合成、实时听写、课程转录、豆包 AI 整理与多轮对话。完整文档见 /api/docs/markdown，"
                 "Agent 入口见 /llms.txt。WebSocket /ws/asr 的帧协议见 Markdown 文档。"
                 "本服务没有应用级 API Key；建议从项目后端调用，沿用部署层访问控制。",
     servers=[{"url": "/", "description": "当前服务（同源）"},
@@ -56,11 +57,13 @@ app = FastAPI(
         {"name": "tts", "description": "文字转音频"},
         {"name": "transcribe", "description": "串行任务队列、文字稿、字幕和 AI 笔记"},
         {"name": "developer", "description": "开发文档和可运行示例"},
+        {"name": "chat", "description": "复用豆包登录态的多轮对话与本机历史"},
     ],
 )
 app.include_router(tts_router)
 app.include_router(transcribe_router)
 app.include_router(developer_router)
+app.include_router(chat_router)
 
 # 放行所有 Host（单用户本地工具，uvicorn 0.46+ 默认开启 TrustedHost 校验会拒 WS）
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])

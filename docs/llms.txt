@@ -1,6 +1,6 @@
 # 豆包语音工作室 API
 
-> 自建 HTTP / WebSocket 服务。复用服务器上的豆包登录态，封装语音合成、实时识别、课程转录和可选 AI 学习笔记。
+> 自建 HTTP / WebSocket / SSE 服务。复用服务器上的豆包登录态，封装语音合成、实时识别、课程转录、AI 学习笔记和多轮对话。
 > 公网 Base URL：使用当前文档所在服务的域名；your-domain.example 是占位示例
 > 同机 Base URL：http://127.0.0.1:8000
 
@@ -17,7 +17,9 @@
 - 当前服务没有应用级 API Key。部署层如有 Cloudflare Access 等访问控制，请沿用其现有授权流程。
 - POST /api/transcribe/url 或 /api/transcribe/file 返回 HTTP 200 的任务对象，保存 id，每 2 秒 GET /api/transcribe/jobs/{id}。
 - done / error / cancelled 是终态；AI 整理另看 summary_status，done 不保证 AI 成功。
-- summarize 默认 false，显式传 true 才整理。AI 是课程任务的一部分，没有通用聊天或独立摘要端点。
+- summarize 默认 false，显式传 true 才整理；课程 AI 整理是课程任务的一部分。
+- 通用对话：POST /api/chat/sessions 创建会话；POST /api/chat/sessions/{id}/messages 发送 text 和唯一 request_id，以 SSE 接收 session/text/done。text 事件是完整回复快照，必须替换显示；done 后检查最后一条消息的 status/error。GET 会话可恢复历史；同一会话续聊复用上游上下文。
+- 停止接收后保留部分回复，但不保证上游停止生成。对话保存在本机 chat_out/sessions/，也可能出现在豆包账号历史中。不得读取或传递 auth.json / Cookie。
 - 一个服务进程串行处理课程任务，任务间隔 2 秒；TTS 不在此队列。不要自动提高并发或开启多 worker。
 - POST 支持可选 `request_id` 幂等键；网络超时后用同一标识重试，或先查询任务列表，避免重复任务。
 - GET /api/health 的 ok 是登录态启动自检状态，不是上游服务每次的实时可用保证。

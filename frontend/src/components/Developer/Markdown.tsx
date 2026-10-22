@@ -38,6 +38,17 @@ export function Markdown({ text }: { text: string }) {
     if (line.startsWith('### ')) {
       blocks.push(<h3 key={key}>{inline(line.slice(4))}</h3>); index++; continue
     }
+    if (/^#{1,2} /.test(line)) {
+      blocks.push(<h2 key={key}>{inline(line.replace(/^#{1,2} /, ''))}</h2>); index++; continue
+    }
+    if (/^\d+\. /.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^\d+\. /.test(lines[index])) items.push(lines[index++].replace(/^\d+\. /, ''))
+      blocks.push(<ol key={key}>{items.map((item, i) => <li key={i}>{inline(item)}</li>)}</ol>); continue
+    }
+    if (line.startsWith('> ')) {
+      blocks.push(<blockquote key={key}>{inline(line.slice(2))}</blockquote>); index++; continue
+    }
     if (line.startsWith('|') && /^\|[\s:|-]+\|$/.test(lines[index + 1] || '')) {
       const headers = cells(line)
       index += 2

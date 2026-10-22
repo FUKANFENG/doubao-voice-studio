@@ -10,6 +10,7 @@ Base URL: ${baseUrl}
 先读取 ${baseUrl}/llms.txt、${baseUrl}/api/docs/markdown 和 ${baseUrl}/openapi.json。
 从业务后端调用，不读取或复制服务器 auth.json 或豆包 Cookie。
 按文档选择 TTS / WebSocket ASR / URL 或文件转录；AI 整理在提交时传 summarize=true。
+多轮对话先 POST /api/chat/sessions，再向该会话 messages 接口提交 text 和唯一 request_id；SSE 的 text 是回复全文快照，done 后核对最后一条消息的 status/error。
 转录保存任务 id，每 2 秒查询；done/error/cancelled 是终态，AI 成功另看 summary_status。
 POST 超时后不要盲目重发；先查询历史。不要增加 worker 或绕过现有串行队列。
 兼容 detail 字符串、对象、数组及代理非 JSON 错误。
@@ -55,7 +56,7 @@ export function DeveloperPanel() {
   return <section className="developer-panel" aria-label="API 开发文档">
     <div className="dev-intro card">
       <div className="dev-intro-copy">
-        <span className="dev-kicker"><span className="status-dot" /> API v1.3 · HTTP + WebSocket</span>
+        <span className="dev-kicker"><span className="status-dot" /> API v1.4 · HTTP + WebSocket + SSE</span>
         <h2>一次接入，让每个项目<br className="dev-title-break" />都有声音。</h2>
         <p>参数、示例和接口契约都在这里。复制一份说明，交给你的开发 Agent。</p>
         <div className="dev-actions"><CopyButton text={agentInstructions} label="复制 Agent 接入说明" primary />

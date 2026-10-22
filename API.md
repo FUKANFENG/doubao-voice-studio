@@ -1,6 +1,6 @@
 # 豆包语音工作室 API
 
-版本 1.3.0 · 更新于 2026-10-13。本文对应正在运行的本地服务；HTTP 契约由代码生成 OpenAPI，WebSocket 协议在本文单独说明。
+版本 1.4.0 · 更新于 2026-10-22。本文对应正在运行的本地服务；HTTP 契约由代码生成 OpenAPI，WebSocket 协议在本文单独说明。
 
 ## 快速开始
 
@@ -37,6 +37,41 @@ Invoke-RestMethod "$base/api/transcribe/capabilities"
 从其他项目的后端调用即可；跨站网页直连还受 CORS 限制。当前只放行本机开发来源，没有默认允许任意网站跨域。推荐通过你的业务后端中转。服务是个人共享队列，没有用户隔离，能访问接口的调用方可以查询全部任务。
 
 [完整 Markdown](/api/docs/markdown) · [OpenAPI](/openapi.json) · [交互式 HTTP 文档](/docs) · [Agent 索引](/llms.txt)
+
+## 豆包多轮对话
+
+对话复用服务端 `auth.json` 的登录态；浏览器和调用方只提交消息，不接触豆包 Cookie。每个本机会话对应一段独立的豆包会话，续聊时复用上游会话标识。消息可能出现在当前豆包账号的会话历史中。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | /api/chat/sessions | 新建会话，无需请求体 |
+| GET | /api/chat/sessions | 按更新时间倒序列出会话，不含全文 |
+| GET | /api/chat/sessions/{id} | 查询会话及完整消息 |
+| POST | /api/chat/sessions/{id}/messages | 发送消息，返回 text/event-stream |
+
+创建会话返回 `id, title, created_at, updated_at, generating, messages`；时间戳单位为秒。每条消息包含 `id, role, content, status, error, created_at, request_id`，role 为 `user / assistant`，status 为 `done / streaming / stopped / error`。
+
+发送示例（用创建会话时返回的 id 替换路径）：
+
+```json
+{"text":"你好，请帮我梳理一个内容创作计划。","request_id":"plan-turn-1"}
+```
+
+- `text` 必填，1–12000 字符，不能全为空白。
+- `request_id` 必填，1–128 个字母、数字、连字符或下划线。同一次提交重试时保持不变；已处理的重复请求直接返回当前会话，不重复发送上游。使用相同标识提交不同内容会返回 HTTP 409。
+- 每段会话同时只处理一条消息；忙时返回 HTTP 409。登录态不可用返回 HTTP 503，空白消息返回 HTTP 400，参数校验失败返回 HTTP 422。
+
+SSE 每帧为一行 `data: JSON` 加一个空行，JSON 的 `type` 为：
+
+| type | 内容 | 客户端处理 |
+| --- | --- | --- |
+| session | session：当前会话和新增的消息对 | 显示用户消息及正在生成的回复 |
+| text | message_id、text | 用 text 替换对应回复全文；不是追加片段 |
+| done | session：最终完整会话 | 检查最后一条 assistant 的 status 和 error |
+
+流开始后失败仍返回 `done`，其中最后一条消息 `status=error`，并保留已经生成的部分。HTTP 200 本身不代表回复成功。若连接断开而没有收到 done，请重新 GET 会话详情核对结果，再决定是否重试。
+
+关闭请求或取消 fetch 会停止本机接收，部分回复保存为 `stopped`；这不保证豆包上游停止生成。记录自动保存在 `chat_out/sessions/`，启动时将未完成的回复标记为中断，后续消息仍使用原上游会话。服务须保持单进程；可访问接口的调用方可以读取所有本机对话。
 
 ## 语音合成 TTS
 
@@ -236,7 +271,7 @@ curl.exe --fail-with-body "$base/api/transcribe/file" -F "file=@C:/media/lesson.
 
 提交 URL 或文件时指定 `summarize=true`。服务使用服务器上已有的豆包登录态，不需要额外 LLM Key；文字稿会交给该豆包账号整理，可能出现在会话历史中。
 
-目前没有独立摘要或通用聊天端点；AI 整理随课程任务执行。只需原稿时传 `summarize=false`。
+课程 AI 整理随任务执行，没有独立摘要端点；只需原稿时传 `summarize=false`。通用聊天使用上文的 `/api/chat/sessions` 接口，与课程队列分开。
 
 | summary_status | 含义 |
 | --- | --- |
@@ -365,7 +400,8 @@ Base URL: https://your-domain.example
 先读取 /llms.txt、/api/docs/markdown 和 /openapi.json。
 
 从业务后端调用 HTTP / WebSocket，不读取或复制服务器 auth.json。
-覆盖所需的 TTS、实时 ASR、课程转录与可选 AI 整理。
+覆盖所需的 TTS、实时 ASR、课程转录、可选 AI 整理与多轮对话。
+聊天先创建会话，再以唯一 request_id 发送消息；SSE text 替换全文，done 后核对最后一条消息 status/error。
 转录保存 job id，每 2 秒查询，终态 done/error/cancelled 停止轮询。
 AI 成功单独判断 summary_status === "done"。
 不要自动重试提交 POST；超时后查询历史，避免重复任务。
