@@ -12,6 +12,8 @@
 !/start.bat
 !/dev-backend.bat
 !/dev-frontend.bat
+!/启动豆包语音工作室.command
+!/停止豆包语音工作室.command
 !/transcribe.py
 !/backend/
 !/frontend/
