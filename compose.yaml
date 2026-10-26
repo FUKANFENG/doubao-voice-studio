@@ -1,0 +1,44 @@
+name: doubao-voice-studio
+services:
+  studio:
+    image: doubao-voice-studio:local
+    build:
+      context: .
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "${DOUBAO_BIND_IP:-127.0.0.1}:${DOUBAO_PORT:-8000}:8000"
+    volumes:
+      - type: bind
+        source: ${DOUBAO_AUTH_FILE:-./auth.json}
+        target: /app/auth.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - transcripts:/app/transcribe_out
+      - chats:/app/chat_out
+      - uploads:/tmp/doubao_uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - studio
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  transcripts:
+  chats:
+  uploads:
+
+networks:
+  studio:

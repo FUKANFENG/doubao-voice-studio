@@ -27,7 +27,32 @@
 
 核心语音 SDK 已包含在 `vendor/doubao_voice/`，不需要外部目录链接。已有音视频通过本服务转录时仍需要连接豆包；这不是离线识别引擎。
 
-## 快速开始
+## 安装方式
+
+| 方式 | 适用场景 | 宿主机需要 |
+| --- | --- | --- |
+| [Docker Compose](docs/DOCKER.md) | Windows / macOS 的 Docker Desktop，或 Linux 服务器 | Git、Docker、Compose |
+| [原生安装](#原生安装) | 本地开发、调试或自行管理 Python 进程 | Python、Node.js、FFmpeg |
+
+两种方式都使用自己的豆包登录态；都可以接入 Cloudflare Tunnel。Docker 将依赖与启动配置打包，功能和串行队列保持一致。
+
+## Docker 快速开始
+
+首次安装（PowerShell）：
+
+```powershell
+git clone https://github.com/FUKANFENG/doubao-voice-studio.git
+Set-Location doubao-voice-studio
+if (!(Test-Path auth.json)) { Copy-Item auth.example.json auth.json }
+# 在本机编辑 auth.json，填入自己的 cookie、web_id、tea_uuid。
+docker compose up -d --build --wait --wait-timeout 120
+```
+
+打开 **http://127.0.0.1:8000**。已有克隆可直接进入项目目录并保留现有 `auth.json`。默认只发布到本机地址，运行镜像包含 Python、Node.js、FFmpeg 和前端。任务记录、聊天记录与待处理文件使用持久卷，登录态只读挂载，不会写入镜像。
+
+完整步骤（含 Linux 命令、登录态获取、端口冲突、宿主机代理、Cloudflare、更新与备份）见 **[Docker 安装与运维](docs/DOCKER.md)**。原生服务使用 8000 时，可先在 `.env` 中设置 `DOUBAO_PORT=18001`。
+
+## 原生安装
 
 ### 1. 克隆并安装依赖
 
@@ -54,6 +79,8 @@ Copy-Item auth.example.json auth.json
 `cookie` 是会话 Cookie；`web_id`、`tea_uuid` 来自同一会话的请求参数。可选的 `proxy` 用于访问豆包上游。不要把真实值写进源码、提交记录、截图或 issue。
 
 仓库只包含空白模板，`auth.json` 已被 Git 忽略。未配置时 Web 页面和文档仍可打开，但语音和 AI 功能不可用。启动时的自检会通过豆包合成一句短文本。
+
+具体获取步骤见 [登录态配置说明](docs/DOCKER.md#2-克隆并配置登录态)，原生安装也适用。
 
 ### 3. 配置 FFmpeg
 
@@ -152,11 +179,16 @@ npm run build --prefix frontend
 
 自动测试隔离上游调用，不需要真实 Cookie。GitHub Actions 在 push / pull request 时运行后端测试和前端构建。
 
+Docker 构建和容器冒烟检查也在 CI 中运行：包括页面与 API、FFmpeg / Node.js、只读凭证挂载以及重建后的数据保留。
+
 ## 目录
 
 ```text
 backend/           FastAPI、语音接口、转录管线和队列
 frontend/          React Web 工作台
+Dockerfile         多阶段构建：前端编译与单进程运行镜像
+compose.yaml       端口、只读凭证挂载、持久卷和自动重启
+docs/DOCKER.md     Docker 安装、更新和备份
 vendor/            项目使用的语音 SDK
 examples/          Python / Node.js 接入客户端
 docs/llms.txt      Agent 接入索引

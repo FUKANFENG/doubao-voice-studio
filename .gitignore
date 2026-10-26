@@ -2,6 +2,10 @@
 /*
 !/.gitignore
 !/.gitattributes
+!/.dockerignore
+!/Dockerfile
+!/compose.yaml
+!/.env.example
 !/README.md
 !/API.md
 !/auth.example.json

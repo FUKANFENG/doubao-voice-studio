@@ -8,4 +8,8 @@
 *.mjs text eol=lf
 *.txt text eol=lf
 *.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+.env.example text eol=lf
 *.bat text eol=crlf

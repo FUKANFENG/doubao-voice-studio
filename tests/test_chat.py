@@ -1,6 +1,7 @@
 """Chat contracts, persistence, interruption, and upstream SSE without real credentials."""
 import asyncio
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -68,7 +69,8 @@ class ChatContractTests(unittest.TestCase):
         self.assertNotIn("upstream_conversation_id", public)
         self.assertNotIn("cookie", response.text)
         self.assertEqual(len(self.client.get("/api/chat/sessions").json()), 1)
-        self.assertEqual((Path(self.folder.name) / (session_id + ".json")).stat().st_mode & 0o777, 0o600)
+        if os.name == "posix":  # Windows ACLs are not represented by POSIX mode bits.
+            self.assertEqual((Path(self.folder.name) / (session_id + ".json")).stat().st_mode & 0o777, 0o600)
 
     def test_upstream_failure_keeps_partial_reply_and_releases_conversation(self):
         async def broken(*args):
