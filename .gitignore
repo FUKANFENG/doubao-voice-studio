@@ -13,6 +13,9 @@
 !/requirements-dev.txt
 !/requirements-auth.txt
 !/export_auth.py
+!/auth_gui.py
+!/打开登录态工具.bat
+!/build-auth-gui.bat
 !/更新豆包登录态.bat
 !/install.bat
 !/build.bat

@@ -82,7 +82,15 @@ Copy-Item auth.example.json auth.json
 
 具体获取步骤见 [登录态配置说明](docs/DOCKER.md#2-克隆并配置登录态)，原生安装也适用。
 
-#### Windows：自动更新本人的客户端登录态
+#### Windows：窗口获取并复制登录态
+
+双击 **`打开登录态工具.bat`**（已打包时会打开 `dist/DoubaoAuthTool.exe`），然后点击 **获取登录态 → 复制完整配置**，粘贴到其他程序的配置文件即可。也可点击 **仅复制 Cookie**。窗口只读取本机豆包客户端，不联网，不自动覆盖 `auth.json`。
+
+窗口默认沿用项目已有的 `auth.json` 参数，也可选择另一份本人配置；首次缺少设备参数时，可在窗口粘贴同一会话的实际语音请求 URL。若仍缺参数，会显示已经获取的 Cookie，完整配置复制按钮保持禁用，避免把不完整配置当作可用配置。
+
+独立 EXE 不需要安装 Python。源码启动需要 Python 3.11、Tkinter 和 `requirements-auth.txt` 中的依赖。开发者安装 PyInstaller 后，可双击 `build-auth-gui.bat` 重新打包；打包仅收集程序代码和依赖，不包含真实登录态。
+
+#### Windows：命令行更新本人的客户端登录态
 
 [export_auth.py](export_auth.py) 只读取当前 Windows 用户的豆包 PC 客户端，不扫描 Chrome / Edge。默认读取 `%LOCALAPPDATA%\Doubao\User Data\Default\Network\Cookies`，更新项目根目录 `auth.json` 中的 Cookie，保留已有 `web_id`、`tea_uuid`、`overrides`、代理等参数。脚本不联网、不打印 Cookie、不创建凭据备份。
 
