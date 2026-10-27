@@ -82,6 +82,42 @@ Copy-Item auth.example.json auth.json
 
 具体获取步骤见 [登录态配置说明](docs/DOCKER.md#2-克隆并配置登录态)，原生安装也适用。
 
+#### Windows：自动更新本人的客户端登录态
+
+[export_auth.py](export_auth.py) 只读取当前 Windows 用户的豆包 PC 客户端，不扫描 Chrome / Edge。默认读取 `%LOCALAPPDATA%\Doubao\User Data\Default\Network\Cookies`，更新项目根目录 `auth.json` 中的 Cookie，保留已有 `web_id`、`tea_uuid`、`overrides`、代理等参数。脚本不联网、不打印 Cookie、不创建凭据备份。
+
+先安装工具依赖（运行服务器不需要额外安装此依赖）：
+
+```bash
+python -m pip install -r requirements-auth.txt
+```
+
+已配置过 `auth.json` 时，在豆包 PC 客户端登录后完全退出客户端（包括托盘），然后双击根目录 **`更新豆包登录态.bat`**。也可执行：
+
+```bash
+python -I -X utf8 export_auth.py
+```
+
+若项目已有 `.venv`，安装依赖和运行脚本时都使用其中的 Python；双击入口依次尝试项目虚拟环境、`py -3.11`、PATH 中的 `python`。只检查本地提取和配置完整性、不修改文件：
+
+```bash
+python -I -X utf8 export_auth.py --check
+```
+
+首次配置时，Cookie 数据库不能保证提供 `web_id` / `tea_uuid`。可从本人同一会话的实际语音 WS 请求 URL 获取这些参数；脚本仅解析地址，不发请求：
+
+```bash
+python -I -X utf8 export_auth.py --request-url "wss://ws-samantha.doubao.com/samantha/audio/tts?web_id=实际值&tea_uuid=实际值"
+```
+
+上例仅展示参数位置；请使用实际完整 URL，以便带入已知的客户端版本及设备参数。也支持 `--web-id`、`--tea-uuid` 手动指定。脚本不会生成或填入作者的固定设备标识，已有参数也不代表与刚导出的 Cookie 一定属于同一会话，需使用自己的配套配置。
+
+自定义客户端目录可用 `--user-data-dir`（指向 `User Data`）及 `--profile`（默认 `Default`）；用 `--output` 指定输出文件，`--base-config` 指定要沿用参数的配置。输出文件已存在时会原子替换；解析、解密或保存失败时保留原配置。Windows 文件权限继承输出目录的 ACL，请将其保存在自己的用户目录中。
+
+工具支持旧式 DPAPI 和 `v10/v11` AES-GCM，校验新格式的域名摘要；遇到 `v20` App-Bound 加密会停止并提示，不绕过保护。DPAPI 用于本机解密，导出的明文配置可以复制到其他部署机器使用，实际可用性取决于服务器是否继续接受该会话。不要提交或公开配置。
+
+导出后重启服务加载新配置；服务启动会进行一次 TTS 自检，而脚本的 `--check` 不验证服务器端登录是否有效。
+
 ### 3. 配置 FFmpeg
 
 已加入 PATH 时无需额外配置：

@@ -11,6 +11,9 @@
 !/auth.example.json
 !/settings.example.json
 !/requirements-dev.txt
+!/requirements-auth.txt
+!/export_auth.py
+!/更新豆包登录态.bat
 !/install.bat
 !/build.bat
 !/start.bat
@@ -57,3 +60,6 @@
 /verification/
 /backups/
 /doubao_voice_asr_tts/
+
+# 登录态导出的原子写入临时文件。
+**/.auth-export-*.tmp
