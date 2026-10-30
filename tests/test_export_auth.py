@@ -138,11 +138,13 @@ class ExportAuthTests(unittest.TestCase):
         before = target.read_bytes()
         out, err = io.StringIO(), io.StringIO()
         with patch.object(export.sys, "platform", "win32"), \
+                patch.dict(export.os.environ, {}, clear=True), \
                 patch.object(export, "collect_cookies", return_value=("sessionid=synthetic-secret", 1)), \
                 contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            self.assertEqual(export.main(["--output", str(target), "--check"]), 0)
+            args = ["--user-data-dir", str(self.root), "--output", str(target)]
+            self.assertEqual(export.main([*args, "--check"]), 0)
             self.assertEqual(target.read_bytes(), before)
-            self.assertEqual(export.main(["--output", str(target)]), 0)
+            self.assertEqual(export.main(args), 0)
         self.assertEqual(json.loads(target.read_text(encoding="utf-8"))["cookie"], "sessionid=synthetic-secret")
         self.assertNotIn("synthetic-secret", out.getvalue() + err.getvalue())
         self.assertEqual(list(self.root.glob(".auth-export-*")), [])
@@ -165,9 +167,11 @@ class ExportAuthTests(unittest.TestCase):
         before = target.read_bytes()
         out, err = io.StringIO(), io.StringIO()
         with patch.object(export.sys, "platform", "win32"), \
-                patch.object(export, "collect_cookies", side_effect=ValueError("synthetic-secret")), \
+                patch.dict(export.os.environ, {}, clear=True), \
+                patch.object(export, "collect_cookies", side_effect=ValueError("synthetic-secret")) as collect, \
                 contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            self.assertEqual(export.main(["--output", str(target)]), 1)
+            self.assertEqual(export.main(["--user-data-dir", str(self.root), "--output", str(target)]), 1)
+        collect.assert_called_once_with(self.root, "Default")
         self.assertNotIn("synthetic-secret", out.getvalue() + err.getvalue())
         self.assertEqual(target.read_bytes(), before)
 
