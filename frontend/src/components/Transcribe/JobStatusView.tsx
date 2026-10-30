@@ -19,7 +19,9 @@ export function JobStatusView() {
   const wait = job.wait_sec + (!job.started_at ? tick : 0)
   const process = job.processing_sec + (job.started_at ? tick : 0)
   const steps = ['准备音频', '逐段转录', '生成文字稿', 'AI 整理']
-  const stage = ['pending', 'downloading', 'extracting', 'chunking'].includes(job.status) ? 0 : ['recognizing', 'waiting_asr'].includes(job.status) ? 1 : job.status === 'merging' ? 2 : 3
+  const stage = ['error', 'cancelled'].includes(job.status)
+    ? job.total_chunks && job.done_chunks < job.total_chunks ? 1 : job.result_text ? 2 : 0
+    : ['pending', 'downloading', 'extracting', 'chunking'].includes(job.status) ? 0 : ['recognizing', 'waiting_asr'].includes(job.status) ? 1 : job.status === 'merging' ? 2 : 3
   return <section className="card job-detail">
     <div className="section-heading compact"><span className={'state-pill ' + job.status}><span className="status-dot" />{STATUS_LABEL[job.status]}</span><span className="job-id">#{job.id.slice(0, 6)}</span></div>
     <h2 className="job-title">{job.title || '准备好，开始记录这段内容。'}</h2>

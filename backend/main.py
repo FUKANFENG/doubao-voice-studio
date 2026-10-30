@@ -22,6 +22,7 @@ from .asr_ws import asr_endpoint
 from .transcribe_api import router as transcribe_router
 from .developer_docs import router as developer_router
 from .chat_api import router as chat_router
+from .auth_api import router as auth_router
 from .api_models import HealthResponse
 from fastapi import WebSocket
 
@@ -64,6 +65,7 @@ app.include_router(tts_router)
 app.include_router(transcribe_router)
 app.include_router(developer_router)
 app.include_router(chat_router)
+app.include_router(auth_router)
 
 # 放行所有 Host（单用户本地工具，uvicorn 0.46+ 默认开启 TrustedHost 校验会拒 WS）
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])

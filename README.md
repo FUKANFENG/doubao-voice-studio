@@ -82,6 +82,60 @@ Copy-Item auth.example.json auth.json
 
 具体获取步骤见 [登录态配置说明](docs/DOCKER.md#2-克隆并配置登录态)，原生安装也适用。
 
+#### Windows：窗口获取并复制登录态
+
+双击 **`打开登录态工具.bat`**（优先打开 `dist/account-tool/DoubaoAuthTool.exe`，也兼容 `dist/DoubaoAuthTool.exe`），点击 **获取登录态**，即可复制完整配置、仅复制 Cookie，或保存为 JSON。窗口采用与工作室一致的暖白、橙色和绿色界面，读取过程在后台进行。
+
+填好 **本机工作室地址**（默认 `http://127.0.0.1:8000`），再点击 **应用到工作室**：工作室先验证会话，成功后原子保存并立即生效，无需重启，失败保留原配置。也可点击 **打开本机工作室** 进入登录态管理页面。只获取、复制和保存时不联网；应用时才由工作室请求豆包验证。
+
+窗口默认沿用项目已有的 `auth.json` 参数，也可选择另一份本人配置；首次缺少设备参数时，可在窗口粘贴同一会话的实际语音请求 URL。若仍缺参数，会显示已经获取的 Cookie，完整配置复制按钮保持禁用，避免把不完整配置当作可用配置。
+
+独立 EXE 不需要安装 Python。源码启动需要 Python 3.11、Tkinter 和 `requirements-auth.txt` 中的依赖。开发者安装 PyInstaller 后，可双击 `build-auth-gui.bat` 重新打包；打包仅收集程序代码和依赖，不包含真实登录态。
+
+项目 [Windows account tool 构建](https://github.com/FUKANFENG/doubao-voice-studio/actions/workflows/windows-auth-tool.yml) 会生成 `DoubaoAuthTool-windows` 下载包（登录 GitHub 后，在成功运行页面的 Artifacts 中下载）。解压放入项目 `dist/` 后，网页登录态管理也会提供下载入口。EXE 不进入源码提交。
+
+#### 在工作室中管理登录态
+
+打开 **登录态管理**（`/#account`），查看当前连接、下载 Windows 工具，或导入 JSON 文件/粘贴配置。直接在本机访问 Windows 原生服务时，还可点击 **获取并应用登录态**。一键读取使用当前 Windows 用户的豆包 `Default` 配置；需要 `requirements-auth.txt` 依赖。缺少设备参数时，可展开首次配置选项，填入本人同一会话的实际语音请求 URL。
+
+凭据读取和修改接口仅接受直接本机访问，并核对 Host、Origin 与转发请求头。通过公网、局域网或 Cloudflare Tunnel 访问时只展示状态和工具入口，不允许读取或替换服务端凭据。其他原生部署可在服务所在电脑导入配置；Docker 保持只读挂载，请在宿主机更新 `auth.json` 后重启容器。已有转录、聊天历史和其他配置均保留。
+
+#### Windows：命令行更新本人的客户端登录态
+
+[export_auth.py](export_auth.py) 只读取当前 Windows 用户的豆包 PC 客户端，不扫描 Chrome / Edge。默认读取 `%LOCALAPPDATA%\Doubao\User Data\Default\Network\Cookies`，更新项目根目录 `auth.json` 中的 Cookie，保留已有 `web_id`、`tea_uuid`、`overrides`、代理等参数。脚本不联网、不打印 Cookie、不创建凭据备份。
+
+先安装工具依赖（运行服务器不需要额外安装此依赖）：
+
+```bash
+python -m pip install -r requirements-auth.txt
+```
+
+已配置过 `auth.json` 时，在豆包 PC 客户端登录后完全退出客户端（包括托盘），然后双击根目录 **`更新豆包登录态.bat`**。也可执行：
+
+```bash
+python -I -X utf8 export_auth.py
+```
+
+若项目已有 `.venv`，安装依赖和运行脚本时都使用其中的 Python；双击入口依次尝试项目虚拟环境、`py -3.11`、PATH 中的 `python`。只检查本地提取和配置完整性、不修改文件：
+
+```bash
+python -I -X utf8 export_auth.py --check
+```
+
+首次配置时，Cookie 数据库不能保证提供 `web_id` / `tea_uuid`。可从本人同一会话的实际语音 WS 请求 URL 获取这些参数；脚本仅解析地址，不发请求：
+
+```bash
+python -I -X utf8 export_auth.py --request-url "wss://ws-samantha.doubao.com/samantha/audio/tts?web_id=实际值&tea_uuid=实际值"
+```
+
+上例仅展示参数位置；请使用实际完整 URL，以便带入已知的客户端版本及设备参数。也支持 `--web-id`、`--tea-uuid` 手动指定。脚本不会生成或填入作者的固定设备标识，已有参数也不代表与刚导出的 Cookie 一定属于同一会话，需使用自己的配套配置。
+
+自定义客户端目录可用 `--user-data-dir`（指向 `User Data`）及 `--profile`（默认 `Default`）；用 `--output` 指定输出文件，`--base-config` 指定要沿用参数的配置。输出文件已存在时会原子替换；解析、解密或保存失败时保留原配置。Windows 文件权限继承输出目录的 ACL，请将其保存在自己的用户目录中。
+
+工具支持旧式 DPAPI 和 `v10/v11` AES-GCM，校验新格式的域名摘要；遇到 `v20` App-Bound 加密会停止并提示，不绕过保护。DPAPI 用于本机解密，导出的明文配置可以复制到其他部署机器使用，实际可用性取决于服务器是否继续接受该会话。不要提交或公开配置。
+
+导出后重启服务加载新配置；服务启动会进行一次 TTS 自检，而脚本的 `--check` 不验证服务器端登录是否有效。
+
 ### 3. 配置 FFmpeg
 
 已加入 PATH 时无需额外配置：
@@ -163,6 +217,7 @@ Vite 默认使用 5173 端口，并将 API、WebSocket 和开发文档请求代�
 - **保持一个 Uvicorn worker / 一个服务进程。** 多进程不共享课程队列与识别锁。
 - 课程队列覆盖下载、识别和 AI 整理；TTS 不在课程队列中。实时听写与课程识别共用一个 ASR 通道。
 - 任务结果保存在 `transcribe_out/jobs/`。重启后恢复排队任务，正在处理的任务会标记为中断，完成结果保留。
+- 课程识别遇到传输断线或超时，仅重试当前片段（最多 3 次，间隔 2 秒、4 秒）。每段成功后立即保存文字稿和字幕；最终失败也可查看已完成部分，完整度以已完成片段数为准。
 - 对话记录保存在 `chat_out/sessions/`，不会进入 Git。刷新或重启后可继续原会话。停止生成会断开本机接收并保留部分回复，上游可能已收到消息或仍在生成。聊天会使用当前豆包账号，可能出现在该账号的会话历史中。
 - AI 失败不删除文字稿与字幕。勾选整理会把转录文字发送给当前豆包账号，可能出现在该账号的会话历史中。
 - 当前没有应用级 API Key 或用户隔离。跨项目建议从业务后端调用；远程部署可使用现有反向代理访问控制。

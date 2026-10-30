@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react'
-export type IconName = 'chat' | 'wave' | 'mic' | 'book' | 'arrow' | 'plus' | 'link' | 'upload' | 'check' | 'clock' | 'spark' | 'file' | 'download' | 'copy' | 'close' | 'play' | 'code'
+export type IconName = 'chat' | 'wave' | 'mic' | 'book' | 'arrow' | 'plus' | 'link' | 'upload' | 'check' | 'clock' | 'spark' | 'file' | 'download' | 'copy' | 'close' | 'play' | 'code' | 'key' | 'refresh'
 const paths: Record<IconName, React.ReactNode> = {
+  key: <><circle cx="8" cy="9" r="5" /><path d="m12 13 8 8m-4-4 3-3m-6 0 3-3" /></>,
+  refresh: <><path d="M20 7V3l-4 4a8 8 0 1 0 4 8M20 3h-5" /></>,
   chat: <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" />,
   code: <><path d="m7 6-5 6 5 6m10-12 5 6-5 6M14 3l-4 18" /></>,
   wave: <><path d="M4 10v4m4-8v12m4-15v18m4-15v12m4-8v4" /></>,

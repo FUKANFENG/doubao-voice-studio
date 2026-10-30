@@ -1,0 +1,39 @@
+name: Windows account tool
+
+on:
+  push:
+    paths:
+      - auth_gui.py
+      - export_auth.py
+      - requirements-auth.txt
+      - tests/test_auth_gui.py
+      - .github/workflows/windows-auth-tool.yml
+  pull_request:
+    paths:
+      - auth_gui.py
+      - export_auth.py
+      - requirements-auth.txt
+      - tests/test_auth_gui.py
+      - .github/workflows/windows-auth-tool.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements-auth.txt pyinstaller
+      - run: python -m unittest discover -s tests -p test_auth_gui.py -v
+      - run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name DoubaoAuthTool --hidden-import export_auth --hidden-import Crypto.Cipher.AES auth_gui.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DoubaoAuthTool-windows
+          path: dist/DoubaoAuthTool.exe
+          retention-days: 30

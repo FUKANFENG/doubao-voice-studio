@@ -127,11 +127,22 @@ async def run_pipeline(
         # 延迟导入（避免循环）
         from .recognizer import recognize_all
 
+        completed_results: list[tuple[AudioChunk, str]] = []
+
         def on_progress(done: int, total: int, text: str):
-            manager.update(job_id, done_chunks=done, progress_pct=15 + int(done / total * 70))
+            completed_results.append((chunks[done - 1], text))
             # 截前 30 字给前端预览
             preview = text[:30].replace("\n", " ") if text else ""
-            manager.update(job_id, current_step=f"识别 {done}/{total}: {preview}...")
+            manager.update(job_id, done_chunks=done, progress_pct=15 + int(done / total * 70),
+                           current_step=f"识别 {done}/{total}: {preview}...",
+                           result_text=_merge_to_text(completed_results),
+                           srt_text=_merge_to_srt(completed_results),
+                           structured_text=_merge_to_structured(completed_results))
+
+        def on_retry(index: int, attempt: int, max_attempts: int, delay: float):
+            manager.update(job_id, current_step=(
+                f"第 {index + 1}/{len(chunks)} 段连接中断或超时，"
+                f"{delay:g} 秒后重试（{attempt}/{max_attempts}）…"))
 
         # 串行识别（每段间隔 1 秒，避免 burst 限流）
         from ..asr_gate import asr_slot
@@ -139,7 +150,8 @@ async def run_pipeline(
             manager.update(job_id, status=JobStatus.WAITING_ASR, current_step="等待当前录音结束…")
         async with asr_slot:
             manager.update(job_id, status=JobStatus.RECOGNIZING, progress_pct=15, current_step="逐段识别音频…")
-            texts = await recognize_all(chunks, progress_cb=on_progress, cooldown_sec=1.0)
+            texts = await recognize_all(chunks, progress_cb=on_progress, cooldown_sec=1.0,
+                                        retry_cb=on_retry)
         chunks_results = list(zip(chunks, texts))
         log.info(f"[{job_id}] 识别完成: {len(texts)} 段")
 
@@ -175,7 +187,11 @@ async def run_pipeline(
 
     except Exception as e:
         log.exception(f"[{job_id}] pipeline 失败")
+        if job.summary_requested and job.summary_status == "pending":
+            job.summary_status = "skipped"
         manager.update(job_id, status=JobStatus.ERROR, error=f"{type(e).__name__}: {e}",
+                       current_step=(f"转录中断 · 已保留 {job.done_chunks}/{job.total_chunks} 段"
+                                     if job.total_chunks else "转录失败"),
                        finished_at=time.time())
     finally:
         # Result text is persisted separately; intermediate audio is no longer needed.

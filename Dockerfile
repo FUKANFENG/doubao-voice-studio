@@ -25,6 +25,7 @@ COPY --from=frontend /usr/local/bin/node /usr/local/bin/node
 COPY backend/requirements.txt ./backend/requirements.txt
 RUN python -m pip install --no-cache-dir -r backend/requirements.txt
 COPY backend/ ./backend/
+COPY export_auth.py ./export_auth.py
 COPY vendor/doubao_voice/ ./vendor/doubao_voice/
 COPY API.md ./API.md
 COPY docs/llms.txt ./docs/llms.txt
