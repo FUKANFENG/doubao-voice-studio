@@ -237,6 +237,10 @@ curl.exe --fail-with-body "$base/api/transcribe/file" -F "file=@C:/media/lesson.
 
 每 2 秒查询详情，遇到 `done / error / cancelled` 停止轮询。阶段进度不是剩余时间预测，不应按百分比推算精确 ETA。
 
+课程 ASR 遇到传输断线或超时，会仅重试当前片段，最多尝试 3 次，重试前分别等待 2 秒、4 秒。重试期间仍占用同一个串行队列位置，`current_step` 会显示当前重试状态；登录态、参数或上游明确拒绝不会自动重试。
+
+每个完整识别片段都会立即保存文字稿、字幕和带时间戳原稿。`status=error` 时这些字段可能包含部分结果，使用 `done_chunks / total_chunks` 判断完整度；有文字不等于全文完成。中间音频仍会清理，目前不支持跨任务断点续传。
+
 | 字段 | 说明 |
 | --- | --- |
 | id / client_request_id / title / source / source_type | 任务 ID、客户端幂等标识、标题、来源、url 或 file；文件来源只返回标题 |
@@ -276,7 +280,7 @@ curl.exe --fail-with-body "$base/api/transcribe/file" -F "file=@C:/media/lesson.
 | summary_status | 含义 |
 | --- | --- |
 | not_requested | 未启用整理 |
-| pending | 等待整理；整体任务提前失败时也可能保留此状态 |
+| pending | 等待转录完成后整理 |
 | running | 正在调用豆包整理 |
 | done | 已生成 summary |
 | error | 整理失败，查看 summary_error |
