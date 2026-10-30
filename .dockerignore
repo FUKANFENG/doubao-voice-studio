@@ -20,6 +20,7 @@
 !frontend/public/
 !frontend/public/**
 !API.md
+!export_auth.py
 !docs/
 !docs/llms.txt
 !examples/

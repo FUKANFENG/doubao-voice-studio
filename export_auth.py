@@ -167,6 +167,11 @@ def load_config(path: Path) -> dict:
         config = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         raise ExportError("现有配置无法解析，原文件未修改。") from None
+    return validate_config(config)
+
+
+def validate_config(config: dict) -> dict:
+    """校验磁盘或导入配置，错误信息不包含输入内容。"""
     if not isinstance(config, dict) or set(config) - FIELDS:
         raise ExportError("现有配置的字段不符合 Auth 格式，原文件未修改。")
     if any(not isinstance(value, str) for key, value in config.items() if key != "overrides"):

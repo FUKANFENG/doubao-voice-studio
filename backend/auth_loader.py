@@ -50,6 +50,12 @@ def get_auth():
     return _auth_state["auth"]
 
 
+def activate(auth) -> None:
+    """Install an already verified, persisted account without restarting tasks."""
+    _auth_state.update(auth=auth, loaded=True, auth_ok=True, reason="",
+                       loaded_at=time.time(), cookie_chars=len(auth.cookie))
+
+
 async def _probe_tts_handshake(auth) -> tuple[bool, str]:
     """启动时做一次 TTS 握手（合成单字节文本）验证登录态。
 
