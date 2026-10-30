@@ -84,11 +84,21 @@ Copy-Item auth.example.json auth.json
 
 #### Windows：窗口获取并复制登录态
 
-双击 **`打开登录态工具.bat`**（已打包时会打开 `dist/DoubaoAuthTool.exe`），然后点击 **获取登录态 → 复制完整配置**，粘贴到其他程序的配置文件即可。也可点击 **仅复制 Cookie**。窗口只读取本机豆包客户端，不联网，不自动覆盖 `auth.json`。
+双击 **`打开登录态工具.bat`**（优先打开 `dist/account-tool/DoubaoAuthTool.exe`，也兼容 `dist/DoubaoAuthTool.exe`），点击 **获取登录态**，即可复制完整配置、仅复制 Cookie，或保存为 JSON。窗口采用与工作室一致的暖白、橙色和绿色界面，读取过程在后台进行。
+
+填好 **本机工作室地址**（默认 `http://127.0.0.1:8000`），再点击 **应用到工作室**：工作室先验证会话，成功后原子保存并立即生效，无需重启，失败保留原配置。也可点击 **打开本机工作室** 进入登录态管理页面。只获取、复制和保存时不联网；应用时才由工作室请求豆包验证。
 
 窗口默认沿用项目已有的 `auth.json` 参数，也可选择另一份本人配置；首次缺少设备参数时，可在窗口粘贴同一会话的实际语音请求 URL。若仍缺参数，会显示已经获取的 Cookie，完整配置复制按钮保持禁用，避免把不完整配置当作可用配置。
 
 独立 EXE 不需要安装 Python。源码启动需要 Python 3.11、Tkinter 和 `requirements-auth.txt` 中的依赖。开发者安装 PyInstaller 后，可双击 `build-auth-gui.bat` 重新打包；打包仅收集程序代码和依赖，不包含真实登录态。
+
+项目 [Windows account tool 构建](https://github.com/FUKANFENG/doubao-voice-studio/actions/workflows/windows-auth-tool.yml) 会生成 `DoubaoAuthTool-windows` 下载包（登录 GitHub 后，在成功运行页面的 Artifacts 中下载）。解压放入项目 `dist/` 后，网页登录态管理也会提供下载入口。EXE 不进入源码提交。
+
+#### 在工作室中管理登录态
+
+打开 **登录态管理**（`/#account`），查看当前连接、下载 Windows 工具，或导入 JSON 文件/粘贴配置。直接在本机访问 Windows 原生服务时，还可点击 **获取并应用登录态**。一键读取使用当前 Windows 用户的豆包 `Default` 配置；需要 `requirements-auth.txt` 依赖。缺少设备参数时，可展开首次配置选项，填入本人同一会话的实际语音请求 URL。
+
+凭据读取和修改接口仅接受直接本机访问，并核对 Host、Origin 与转发请求头。通过公网、局域网或 Cloudflare Tunnel 访问时只展示状态和工具入口，不允许读取或替换服务端凭据。其他原生部署可在服务所在电脑导入配置；Docker 保持只读挂载，请在宿主机更新 `auth.json` 后重启容器。已有转录、聊天历史和其他配置均保留。
 
 #### Windows：命令行更新本人的客户端登录态
 

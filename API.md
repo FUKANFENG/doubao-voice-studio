@@ -38,6 +38,23 @@ Invoke-RestMethod "$base/api/transcribe/capabilities"
 
 [完整 Markdown](/api/docs/markdown) · [OpenAPI](/openapi.json) · [交互式 HTTP 文档](/docs) · [Agent 索引](/llms.txt)
 
+## 本机登录态管理
+
+网页入口为 `/#account`。以下接口不返回 Cookie、设备参数或完整配置。状态与工具下载可以通过部署入口访问；读取和修改只接受直接本机连接，Host 必须是 `localhost`、`127.0.0.1` 或 `::1`。跨站来源、Cloudflare 和其他代理转发请求均被拒绝。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/auth/status` | 返回 `loaded, auth_ok, cookie_chars, can_manage, local_available, tool_available` |
+| POST | `/api/auth/local` | 读取当前 Windows 用户的豆包 `Default` 登录态，验证后保存并立即应用 |
+| POST | `/api/auth/import` | 导入配置，未提供的字段沿用原配置；验证通过才保存 |
+| GET | `/api/auth/tool` | 下载 `dist/account-tool/DoubaoAuthTool.exe`，兼容 `dist/DoubaoAuthTool.exe`；未打包时返回 404 |
+
+两个 POST 都需要 `Content-Type: application/json` 与 `X-Doubao-Local: 1`，请求体最多 64 KB。
+
+`/local` 的请求体为 `{}`，或 `{"request_url": "本人实际语音 WebSocket URL"}`。首次缺少设备参数时需要实际 URL；需要 Windows 原生服务及 `requirements-auth.txt` 中的依赖。`/import` 的请求体为 `{"config": {"cookie": "本人新 Cookie", "web_id": "本人设备参数", "tea_uuid": "本人设备参数"}}`；已有完整配置时可只提供 `cookie`。
+
+成功返回与 `/status` 相同的结构，不返回凭据。400 表示配置不完整、读取/验证失败或无法保存，原登录态保留；403 表示不是允许的本机请求，413 表示体积超限，415 表示格式不受支持。响应与浏览器输入不持久缓存。更新后原生服务无需重启；Docker 保持只读挂载，仍需在宿主机更新文件后重启容器。
+
 ## 豆包多轮对话
 
 对话复用服务端 `auth.json` 的登录态；浏览器和调用方只提交消息，不接触豆包 Cookie。每个本机会话对应一段独立的豆包会话，续聊时复用上游会话标识。消息可能出现在当前豆包账号的会话历史中。

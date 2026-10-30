@@ -6,13 +6,18 @@ export function HealthDot() {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let active = true, timer: ReturnType<typeof setTimeout>
-    async function tick() {
+    async function update() {
       try { const data = await fetchHealth(); if (active) { setHealth(data); setFailed(false) } }
       catch { if (active) setFailed(true) }
+    }
+    async function tick() {
+      await update()
       if (active) timer = setTimeout(tick, 10000)
     }
+    const changed = () => { void update() }
+    window.addEventListener('doubao-auth-updated', changed)
     void tick()
-    return () => { active = false; clearTimeout(timer) }
+    return () => { active = false; clearTimeout(timer); window.removeEventListener('doubao-auth-updated', changed) }
   }, [])
   const okay = !failed && !!health?.auth_ok
   return <span className={'health-badge ' + (okay ? 'healthy' : failed || health ? 'unhealthy' : '')} role="status">

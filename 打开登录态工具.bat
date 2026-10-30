@@ -1,6 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+if exist "dist\account-tool\DoubaoAuthTool.exe" (
+    start "" "dist\account-tool\DoubaoAuthTool.exe"
+    exit /b 0
+)
 if exist "dist\DoubaoAuthTool.exe" (
     start "" "dist\DoubaoAuthTool.exe"
     exit /b 0
